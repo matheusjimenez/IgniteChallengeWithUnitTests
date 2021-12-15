@@ -33,7 +33,6 @@ app.post('/users', (request, response) => {
 
   const newUser = {
     id: uuidv4(),
-    created_at: new Date(),
     name,
     username,
     todos: []
@@ -52,39 +51,39 @@ app.get('/todos', checksExistsUserAccount, (request, response) => {
 
 app.post('/todos', checksExistsUserAccount, (request, response) => {
   const { user } = request;
-  const { deadLine, title } = request.body;
+  const { deadline, title } = request.body;
 
   const newTodo = {
     id: uuidv4(),
     created_at: new Date(),
-    done: false,
-    deadLine,
-    title
+    title,
+    deadline: new Date(deadline),
+    done: false
   }
 
   user.todos.push(newTodo);
 
-  return response.status(201).send();
+  return response.status(201).json(newTodo);
   
 });
 
 app.put('/todos/:id', checksExistsUserAccount, (request, response) => {
   const { user } = request;
   const { id } = request.params;
-  const { deadLine, title } = request.body;
+  const { deadline, title } = request.body;
 
   const index = user.todos.findIndex((todo) => todo.id === id);
   const filteredTodo = user.todos.find((todo) => todo.id === id);
 
   if(!filteredTodo)
-    return response.status(400).json({ error: "Invalid todo ID" });
+    return response.status(404).json({ error: "Invalid todo ID" });
   
-  filteredTodo.deadLine = deadLine;
+  filteredTodo.deadline = deadline;
   filteredTodo.title = title;
 
   user[index] = filteredTodo;
 
-  return response.status(200).send();
+  return response.status(200).json(filteredTodo);
 });
 
 app.patch('/todos/:id/done', checksExistsUserAccount, (request, response) => {
@@ -93,9 +92,12 @@ app.patch('/todos/:id/done', checksExistsUserAccount, (request, response) => {
 
   const index = user.todos.findIndex((todo)=> todo.id === id);
 
+  if(index === -1)
+    return response.status(404).json({ error : "Invalid todo ID" });
+
   user.todos[index].done = true;
 
-  return response.status(200).send();
+  return response.status(200).json(user.todos[index]);
 });
 
 app.delete('/todos/:id', checksExistsUserAccount, (request, response) => {
@@ -103,10 +105,13 @@ app.delete('/todos/:id', checksExistsUserAccount, (request, response) => {
   const { id } = request.params;
 
   const selectedTodo = user.todos.findIndex((todo) => todo.id === id);
+
+  if(selectedTodo === -1)
+    return response.status(404).json({ error: "invalid Todo ID" });
   
   user.todos.splice(selectedTodo, 1);
 
-  response.status(200).json(user);
+  response.status(204).json(user);
 });
 
 module.exports = app;
